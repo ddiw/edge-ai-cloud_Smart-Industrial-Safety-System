@@ -36,7 +36,10 @@ DEFAULT_DEVICE_ID = os.environ.get("DEFAULT_DEVICE_ID", "esp32-01")
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "")
 # 세션 서명용. 지정하지 않으면 매 기동마다 새로 만들어 기존 세션이 모두 풀린다.
 SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
-SESSION_DAYS = int(os.environ.get("SESSION_DAYS", 7))
+# 마지막 요청으로부터 이 시간이 지나면 다시 로그인해야 한다.
+# 화면이 5초마다 데이터를 받아가므로, 탭을 열어두면 계속 유지되고
+# 닫아두었다가 이 시간이 지난 뒤 새로고침하면 로그인 화면으로 돌아간다.
+SESSION_IDLE_S = int(os.environ.get("SESSION_IDLE_S", 300))
 LOGIN_RATE_PER_MIN = int(os.environ.get("LOGIN_RATE_PER_MIN", 10))
 
 if not DASHBOARD_PASSWORD:
@@ -46,7 +49,6 @@ if not DASHBOARD_PASSWORD:
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-app.permanent_session_lifetime = timedelta(days=SESSION_DAYS)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -63,11 +65,24 @@ admin_supabase = (
 )
 
 
+def session_alive():
+    """마지막 요청으로부터 SESSION_IDLE_S 안이어야 유효하다.
+    쿠키를 브라우저 세션 쿠키로 두므로 브라우저를 닫아도 풀린다."""
+    if not session.get("auth"):
+        return False
+    last = session.get("seen", 0)
+    if time.time() - last > SESSION_IDLE_S:
+        session.clear()
+        return False
+    session["seen"] = time.time()
+    return True
+
+
 def login_required(view):
     """로그인 안 된 접근은 화면이면 로그인 페이지로, API면 401 JSON으로 돌린다."""
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if session.get("auth"):
+        if session_alive():
             return view(*args, **kwargs)
         if request.path.startswith(("/violations", "/devices", "/stats", "/stream")):
             return jsonify(error="unauthorized"), 401
@@ -96,8 +111,10 @@ def do_login():
     if not hmac.compare_digest(request.form.get("password", ""), DASHBOARD_PASSWORD):
         return render_template("login.html", error="비밀번호가 올바르지 않습니다."), 401
 
-    session.permanent = True
+    # permanent를 켜지 않으면 브라우저 세션 쿠키가 되어 브라우저를 닫으면 사라진다.
+    session.permanent = False
     session["auth"] = True
+    session["seen"] = time.time()
     nxt = request.args.get("next", "")
     return redirect(nxt if nxt.startswith("/") else url_for("index"))
 

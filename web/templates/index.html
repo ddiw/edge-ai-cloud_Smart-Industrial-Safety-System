@@ -64,6 +64,12 @@
     font-size:10px; padding:2px 7px; border-radius:999px; font-weight:600;
     border:1px solid transparent; margin-left:auto;
   }
+  .route {
+    font-size:10px; padding:2px 6px; border-radius:5px; font-weight:600;
+    border:1px solid transparent;
+  }
+  .route.ext { background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); border-color:color-mix(in srgb,var(--accent) 40%,transparent); }
+  .route.int { background:color-mix(in srgb,var(--muted) 14%,transparent); color:var(--muted); border-color:color-mix(in srgb,var(--muted) 30%,transparent); }
   .badge.on { background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
   .badge.idle { background:color-mix(in srgb,var(--warn) 16%,transparent); color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
   .badge.off { background:color-mix(in srgb,var(--danger) 14%,transparent); color:var(--danger); border-color:color-mix(in srgb,var(--danger) 36%,transparent); }
@@ -236,13 +242,16 @@ function renderBoards(devices) {
   $('boards').innerHTML = devices.map(d => {
     const s = secsSince(d.last_seen);
     const [cls, label] = s < IDLE_S ? ['on', '활성'] : s < OFFLINE_S ? ['idle', '대기'] : ['off', '오프라인'];
+    const ext = d.route === 'external';
     return `
       <div class="board">
         <div class="board-head">
           <span class="board-id">${d.device_id}</span>
+          <span class="route ${ext ? 'ext' : 'int'}">${ext ? '외부' : '내부'}</span>
           <span class="badge ${cls}">${label}</span>
         </div>
         <dl class="kv">
+          <dt>경로</dt><dd>${ext ? '터널(HTTPS)' : '내부망(HTTP)'}</dd>
           <dt>IP</dt><dd>${d.ip || '-'}</dd>
           <dt>신호</dt><dd>${d.rssi ? d.rssi + ' dBm' : '-'}</dd>
           <dt>업로드</dt><dd>${d.uploads}회</dd>

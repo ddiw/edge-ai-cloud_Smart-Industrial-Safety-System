@@ -66,6 +66,12 @@ def client_ip():
     return request.remote_addr or "unknown"
 
 
+def connection_route():
+    """이 요청이 터널(외부)로 들어왔는지 내부망에서 바로 왔는지 판별한다.
+    cloudflared가 CF-Connecting-IP를 붙여주므로 그 유무로 갈린다."""
+    return "external" if request.headers.get("CF-Connecting-IP") else "internal"
+
+
 def rate_limited(ip):
     if RATE_LIMIT_PER_MIN <= 0:
         return False
@@ -124,6 +130,9 @@ def upload():
             "person_count": request.headers.get("X-Person-Count", ""),
             "fomo_confidence": request.headers.get("X-Fomo-Confidence", ""),
             "last_image_bytes": str(len(image)),
+            # 이 보드가 지금 터널(외부)로 붙었는지 내부망에서 바로 왔는지
+            "route": connection_route(),
+            "source_ip": ip,
         },
     )
 

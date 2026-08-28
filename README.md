@@ -31,6 +31,7 @@ Python 쓰레드는 GIL 때문에 CPU 바운드인 추론을 병렬화하지 못
 
 ## 문서
 
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — **이어받는 사람은 여기부터**
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — 설계 결정과 그 이유, 실측값, 알려진 한계
 - [`docs/API.md`](docs/API.md) — 엔드포인트 스펙
 - [`docs/DEV_WORKFLOW.md`](docs/DEV_WORKFLOW.md) — 재빌드 없이 코드 반영하는 법

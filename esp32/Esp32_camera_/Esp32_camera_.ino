@@ -47,7 +47,7 @@ const char* WIFI_PASSWORD = SECRET_WIFI_PASSWORD;
  * USE_TLS 1 : 어디서든. Cloudflare Tunnel 주소로 https로 보낸다.
  *             터널은 HTTPS만 받으므로 평문으로는 붙지 않는다.
  * ------------------------------------------------------------------------ */
-#define USE_TLS 0
+#define USE_TLS 1
 
 /* USE_TLS 0 일 때. Pi가 DHCP로 다른 IP를 받아도 mDNS가 찾아주므로 다시 굽지
  * 않아도 된다. 해석 실패 시 고정 IP로 폴백한다. */
@@ -57,8 +57,7 @@ const uint16_t SERVER_PORT = 8000;     // receiver container (8080은 web 대시
 
 /* USE_TLS 1 일 때. cloudflared가 출력한 주소를 그대로 넣는다.
  * (예: "abcd-efg-hij.trycloudflare.com" — https:// 는 붙이지 않는다) */
-const char* TUNNEL_HOST = "CHANGE-ME.trycloudflare.com";
-
+const char* TUNNEL_HOST = "tags-centres-faq-reliance.trycloudflare.com";
 const char* UPLOAD_PATH = "/upload";
 const char* DEVICE_ID = "esp32-02";
 

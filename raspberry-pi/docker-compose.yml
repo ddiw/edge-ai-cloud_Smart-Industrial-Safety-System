@@ -51,6 +51,8 @@ services:
       # 대시보드 로그인. 비어 있으면 web 컨테이너가 기동을 거부한다.
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
       - SECRET_KEY=${SECRET_KEY}
+      # 이 시간 동안 요청이 없으면 재로그인
+      - SESSION_IDLE_S=${SESSION_IDLE_S:-300}
       # 내부망 http로 접속해 테스트할 때는 0으로 둔다
       - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-0}
     depends_on:
