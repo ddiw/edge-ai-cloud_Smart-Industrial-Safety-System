@@ -1,0 +1,28 @@
+# 개발용 오버라이드. `docker compose up` 시 자동으로 병합된다.
+#
+# 소스를 이미지에 굽지 않고 바인드 마운트해서, 코드를 고쳤을 때 재빌드 없이
+# 재시작(또는 gunicorn --reload)만으로 반영되게 한다.
+# 의존성(requirements.txt)이나 Dockerfile을 고쳤을 때만 재빌드가 필요하다.
+#
+# 파일 하나가 아니라 디렉터리를 마운트하는 이유: rsync나 sed -i 같은 도구는
+# 파일을 새로 쓰고 rename 하기 때문에 inode가 바뀐다. 단일 파일 마운트는
+# 원래 inode에 묶여 있어서 수정이 컨테이너에 반영되지 않는다.
+#
+# 프로덕션으로 띄울 때는 이 파일을 빼고 실행:
+#   docker compose -f docker-compose.yml up -d
+
+services:
+  receiver:
+    volumes:
+      - ./receiver:/app:ro
+    command: ["gunicorn", "--reload", "-w", "2", "-b", "0.0.0.0:8000", "app:app"]
+
+  inference:
+    volumes:
+      - ./inference:/app:ro
+      - ./inference/models:/models:ro
+
+  web:
+    volumes:
+      - ../web:/app:ro
+    command: ["gunicorn", "--reload", "-k", "gevent", "-w", "2", "-b", "0.0.0.0:8080", "app:app"]

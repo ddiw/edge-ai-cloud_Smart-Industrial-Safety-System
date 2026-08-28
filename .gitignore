@@ -27,3 +27,9 @@ raspberry-pi/inference/models/*.onnx
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# 테스트용 샘플 사진
+test_picture/
+
+# ESP32 시크릿 (와이파이 비밀번호, API 키) — 저장소가 public이므로 반드시 제외
+esp32/**/secrets.h

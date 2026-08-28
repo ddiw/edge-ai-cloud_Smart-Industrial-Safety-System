@@ -1,0 +1,6 @@
+onnxruntime==1.18.1
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+redis==5.0.4
+supabase==2.31.0
+python-dotenv==1.0.1

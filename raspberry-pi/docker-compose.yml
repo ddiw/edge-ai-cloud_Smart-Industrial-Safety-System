@@ -1,24 +1,62 @@
-# Docker Compose 스켈레톤 — 실제 서비스 정의는 추후 작성
-#
-# services:
-#   receiver:            # ESP32 HTTP POST 수신, Redis 큐에 push, 즉시 응답
-#     build: ./receiver
-#     ports:
-#       - "8000:8000"
-#     depends_on:
-#       - redis
-#
-#   inference:           # Redis 큐 polling, best.onnx 추론, Supabase 업로드
-#     build: ./inference
-#     volumes:
-#       - ./inference/models:/models
-#     depends_on:
-#       - redis
-#
-#   web:                 # 실시간 스트리밍 + 위반 이력/갤러리 대시보드
-#     build: ../web
-#     ports:
-#       - "8080:8080"
-#
-#   redis:                # receiver -> inference 간 비동기 큐
-#     image: redis:alpine
+services:
+  receiver:              # ESP32 HTTP POST 수신, Redis 큐에 push, 즉시 응답
+    build: ./receiver
+    ports:
+      - "8000:8000"
+    environment:
+      - API_KEY=${API_KEY}
+      - REDIS_HOST=redis
+      # 인터넷 노출 대비. ESP32 정상 동작은 분당 15건 이하다.
+      - RATE_LIMIT_PER_MIN=${RATE_LIMIT_PER_MIN:-40}
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  inference:              # Redis 큐 polling, best.onnx 추론, Supabase 업로드
+    build: ./inference
+    volumes:
+      - ./inference/models:/models
+    environment:
+      # 파이썬은 TTY가 아니면 stdout을 버퍼링해서 print가 로그에 안 찍힌다.
+      - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis
+      - MODEL_PATH=/models/best.onnx
+      - CONF_THRESHOLD=${CONF_THRESHOLD:-0.3}
+      # 사람이 없는 프레임의 위반은 오탐으로 보고 버린다
+      - REQUIRE_PERSON=${REQUIRE_PERSON:-1}
+      - PERSON_OVERLAP_MIN=${PERSON_OVERLAP_MIN:-0.5}
+      # 같은 보드의 동일 위반 조합을 이 시간 안에는 1건만 저장 (0이면 끔)
+      - DEDUPE_WINDOW_S=${DEDUPE_WINDOW_S:-60}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET:-violations}
+      - SUPABASE_BUCKET_ORIGINAL=${SUPABASE_BUCKET_ORIGINAL:-violations-original}
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  web:                    # 실시간 스트리밍 + 위반 이력/갤러리 대시보드
+    build: ../web
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      # 원본 열람(signed URL) 전용. ADMIN_KEY가 비어 있으면 그 기능만 꺼진다.
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_BUCKET_ORIGINAL=${SUPABASE_BUCKET_ORIGINAL:-violations-original}
+      - ADMIN_KEY=${ADMIN_KEY}
+      - DEFAULT_DEVICE_ID=${DEFAULT_DEVICE_ID:-esp32-01}
+      # 대시보드 로그인. 비어 있으면 web 컨테이너가 기동을 거부한다.
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      # 내부망 http로 접속해 테스트할 때는 0으로 둔다
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-0}
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:                  # receiver <-> inference <-> web 간 큐 및 최신 프레임 캐시
+    image: redis:alpine
+    restart: unless-stopped

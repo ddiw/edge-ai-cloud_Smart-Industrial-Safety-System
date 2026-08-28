@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "-k", "gevent", "-w", "2", "-b", "0.0.0.0:8080", "app:app"]

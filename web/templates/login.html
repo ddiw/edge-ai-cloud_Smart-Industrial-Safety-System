@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>산업안전 관제 · 로그인</title>
+<style>
+  :root { --bg:#0b0e14; --panel:#141822; --border:#242b3a; --text:#e8ecf4; --muted:#8792a6; --danger:#ff4d5e; --accent:#4c8dff; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#eef1f6; --panel:#fff; --border:#dde2ea; --text:#161b24; --muted:#5f6b7d; }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
+    background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;
+  }
+  form {
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:28px 26px; width:100%; max-width:340px;
+  }
+  h1 { font-size:17px; margin:0 0 4px; }
+  p.sub { font-size:12.5px; color:var(--muted); margin:0 0 20px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  input {
+    width:100%; padding:10px 12px; font-size:14px; font-family:inherit;
+    background:var(--bg); color:var(--text);
+    border:1px solid var(--border); border-radius:8px;
+  }
+  input:focus { outline:none; border-color:var(--accent); }
+  button {
+    width:100%; margin-top:14px; padding:10px; font-size:14px; font-weight:600;
+    font-family:inherit; cursor:pointer; color:#fff; background:var(--accent);
+    border:none; border-radius:8px;
+  }
+  button:hover { filter:brightness(1.08); }
+  .err {
+    margin-top:14px; font-size:12.5px; color:var(--danger);
+    background:color-mix(in srgb,var(--danger) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--danger) 30%,transparent);
+    border-radius:7px; padding:8px 10px;
+  }
+</style>
+</head>
+<body>
+<form method="post" action="/login{{ '?next=' + request.args.get('next') if request.args.get('next') else '' }}">
+  <h1>산업안전 관제</h1>
+  <p class="sub">열람하려면 비밀번호를 입력하세요.</p>
+  <label for="pw">비밀번호</label>
+  <input id="pw" name="password" type="password" autocomplete="current-password" autofocus required>
+  <button type="submit">로그인</button>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+</form>
+</body>
+</html>

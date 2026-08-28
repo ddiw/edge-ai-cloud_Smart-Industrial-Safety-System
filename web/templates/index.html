@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>산업안전 관제</title>
+<style>
+  :root {
+    --bg:#0b0e14; --panel:#141822; --panel-2:#1b2130; --border:#242b3a;
+    --text:#e8ecf4; --muted:#8792a6; --dim:#5c6779;
+    --danger:#ff4d5e; --warn:#ffb020; --ok:#2fd07a; --accent:#4c8dff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:#eef1f6; --panel:#fff; --panel-2:#f6f8fb; --border:#dde2ea;
+      --text:#161b24; --muted:#5f6b7d; --dim:#8a94a5;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif; font-size:14px;
+  }
+
+  /* 상단 바 */
+  .topbar {
+    display:flex; align-items:center; gap:20px; padding:12px 20px;
+    background:var(--panel); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:10; flex-wrap:wrap;
+  }
+  .brand { font-size:16px; font-weight:700; letter-spacing:-.01em; }
+  .brand span { color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; }
+  .live { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .pulse { width:8px; height:8px; border-radius:50%; background:var(--ok); }
+  .pulse.stale { background:var(--warn); }
+  .pulse.down { background:var(--danger); }
+
+  /* KPI */
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; padding:16px 20px 0; }
+  .kpi { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+  .kpi .label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .kpi .value { font-size:26px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .kpi .sub { font-size:11px; color:var(--dim); margin-top:3px; }
+  .kpi.alert .value { color:var(--danger); }
+
+  main { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; padding:16px 20px 28px; }
+  @media (min-width:1180px) { main { grid-template-columns:300px minmax(0,1fr); align-items:start; } }
+
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; }
+  .panel > h2 {
+    font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
+    margin:0; padding:12px 14px; border-bottom:1px solid var(--border); font-weight:600;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .panel .inner { padding:14px; }
+  .side { display:flex; flex-direction:column; gap:16px; }
+
+  /* 보드 카드 */
+  .board { border:1px solid var(--border); border-radius:8px; padding:11px 12px; background:var(--panel-2); }
+  .board + .board { margin-top:10px; }
+  .board-head { display:flex; align-items:center; gap:7px; margin-bottom:9px; }
+  .board-id { font-weight:650; font-size:13px; }
+  .badge {
+    font-size:10px; padding:2px 7px; border-radius:999px; font-weight:600;
+    border:1px solid transparent; margin-left:auto;
+  }
+  .badge.on { background:color-mix(in srgb,var(--ok) 16%,transparent); color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
+  .badge.idle { background:color-mix(in srgb,var(--warn) 16%,transparent); color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
+  .badge.off { background:color-mix(in srgb,var(--danger) 14%,transparent); color:var(--danger); border-color:color-mix(in srgb,var(--danger) 36%,transparent); }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:11.5px; }
+  .kv dt { color:var(--dim); }
+  .kv dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+
+  /* 막대 */
+  .bars { display:flex; flex-direction:column; gap:7px; }
+  .bar-row { display:grid; grid-template-columns:110px 1fr 34px; gap:9px; align-items:center; font-size:11.5px; }
+  .bar-row .name { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track { height:7px; background:var(--panel-2); border-radius:99px; overflow:hidden; }
+  .fill { height:100%; background:var(--danger); border-radius:99px; }
+  .fill.neutral { background:var(--accent); }
+  .bar-row .num { text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+
+  /* 시간대 스파크라인 */
+  .spark { display:flex; align-items:flex-end; gap:2px; height:52px; margin-top:2px; }
+  .spark div { flex:1; background:var(--accent); border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+
+  /* 필터 */
+  .filters { display:flex; gap:8px; flex-wrap:wrap; }
+  select, button.ghost {
+    background:var(--panel-2); color:var(--text); border:1px solid var(--border);
+    border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit;
+  }
+  button.ghost { cursor:pointer; }
+  button.ghost:hover { border-color:var(--accent); }
+
+  /* 위반 그리드 */
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); }
+  .card { background:var(--panel-2); border:1px solid var(--border); border-radius:9px; overflow:hidden; cursor:pointer; }
+  .card:hover { border-color:var(--accent); }
+  .card .thumb { position:relative; }
+  .card img { width:100%; display:block; aspect-ratio:4/3; object-fit:cover; background:var(--bg); }
+  .card .when {
+    position:absolute; right:6px; bottom:6px; font-size:10px; padding:2px 6px;
+    border-radius:5px; background:rgba(0,0,0,.62); color:#fff;
+  }
+  .card .body { padding:9px 10px 10px; }
+  .tags { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:7px; }
+  .tag {
+    font-size:10.5px; padding:2px 6px; border-radius:999px; font-variant-numeric:tabular-nums;
+    background:color-mix(in srgb,var(--danger) 15%,transparent); color:var(--danger);
+    border:1px solid color-mix(in srgb,var(--danger) 32%,transparent);
+  }
+  .tag.low { background:color-mix(in srgb,var(--warn) 15%,transparent); color:var(--warn); border-color:color-mix(in srgb,var(--warn) 32%,transparent); }
+  .card .foot { font-size:10.5px; color:var(--dim); display:flex; justify-content:space-between; gap:6px; }
+  .empty { color:var(--dim); text-align:center; padding:40px 0; font-size:13px; }
+  .note { font-size:11px; color:var(--dim); line-height:1.6; margin:10px 0 0; }
+
+  /* 확대 보기 */
+  dialog {
+    border:1px solid var(--border); border-radius:12px; background:var(--panel);
+    color:var(--text); padding:0; max-width:min(94vw,900px); width:100%;
+  }
+  dialog::backdrop { background:rgba(0,0,0,.72); }
+  dialog img { width:100%; display:block; max-height:70vh; object-fit:contain; background:#000; }
+  .dlg-foot { padding:12px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">산업안전 관제 <span id="window-label">최근 24시간</span></div>
+  <div class="live">
+    <span id="pulse" class="pulse down"></span>
+    <span id="live-text">연결 확인 중</span>
+    <form method="post" action="/logout" style="margin:0">
+      <button class="ghost" type="submit" style="cursor:pointer">로그아웃</button>
+    </form>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="label">보드</div><div class="value" id="k-boards">-</div><div class="sub" id="k-boards-sub">온라인 / 전체</div></div>
+  <div class="kpi alert"><div class="label">위반</div><div class="value" id="k-violations">-</div><div class="sub" id="k-violations-sub">최근 24시간</div></div>
+  <div class="kpi"><div class="label">최다 유형</div><div class="value" id="k-top" style="font-size:18px">-</div><div class="sub" id="k-top-sub">&nbsp;</div></div>
+  <div class="kpi"><div class="label">추론 대기열</div><div class="value" id="k-queue">-</div><div class="sub">Redis 큐 적체</div></div>
+  <div class="kpi"><div class="label">마지막 수신</div><div class="value" id="k-last" style="font-size:18px">-</div><div class="sub" id="k-last-sub">&nbsp;</div></div>
+</div>
+
+<main>
+  <div class="side">
+    <div class="panel">
+      <h2>연결된 보드</h2>
+      <div class="inner" id="boards"><div class="empty">보드 없음</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>위반 유형</h2>
+      <div class="inner"><div class="bars" id="by-class"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2>보드별 발생</h2>
+      <div class="inner"><div class="bars" id="by-device"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2>시간대 추이</h2>
+      <div class="inner">
+        <div class="spark" id="spark"></div>
+        <p class="note" id="spark-note">&nbsp;</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>
+      위반 기록
+      <span class="filters">
+        <select id="f-device"><option value="">전체 보드</option></select>
+        <select id="f-class"><option value="">전체 유형</option></select>
+        <button class="ghost" id="f-reset">초기화</button>
+      </span>
+    </h2>
+    <div class="inner">
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="empty">기록이 없습니다.</div>
+    </div>
+  </div>
+</main>
+
+<dialog id="viewer">
+  <img id="viewer-img" alt="위반 사진">
+  <div class="dlg-foot">
+    <span id="viewer-tags" class="tags"></span>
+    <span id="viewer-meta" style="color:var(--dim);font-size:12px;margin-left:auto"></span>
+    <button class="ghost" onclick="viewer.close()">닫기</button>
+  </div>
+</dialog>
+
+<script>
+const REFRESH_MS = 5000;
+const OFFLINE_S = 300;   // 5분 이상 무소식이면 오프라인으로 본다
+const IDLE_S = 60;       // 1분 이상이면 대기
+const LOW_CONF = 0.45;   // 이 아래는 신뢰도 낮음으로 구분 표시
+
+let rows = [], filterDevice = '', filterClass = '';
+
+const $ = id => document.getElementById(id);
+const ago = iso => {
+  const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 60) return '방금';
+  if (s < 3600) return Math.floor(s / 60) + '분 전';
+  if (s < 86400) return Math.floor(s / 3600) + '시간 전';
+  return Math.floor(s / 86400) + '일 전';
+};
+const secsSince = iso => (Date.now() - new Date(iso)) / 1000;
+const fmtBytes = n => !n ? '-' : (n / 1024).toFixed(0) + ' KB';
+const fmtUptime = s => {
+  s = parseInt(s || 0);
+  if (!s) return '-';
+  if (s < 3600) return Math.floor(s / 60) + '분';
+  return Math.floor(s / 3600) + '시간 ' + Math.floor((s % 3600) / 60) + '분';
+};
+
+function renderBoards(devices) {
+  const online = devices.filter(d => secsSince(d.last_seen) < OFFLINE_S).length;
+  $('k-boards').textContent = online;
+  $('k-boards-sub').textContent = `온라인 / 전체 ${devices.length}`;
+
+  if (!devices.length) { $('boards').innerHTML = '<div class="empty">보드 없음</div>'; return; }
+
+  const newest = devices.reduce((a, b) => secsSince(a.last_seen) < secsSince(b.last_seen) ? a : b);
+  $('k-last').textContent = ago(newest.last_seen);
+  $('k-last-sub').textContent = newest.device_id;
+
+  $('boards').innerHTML = devices.map(d => {
+    const s = secsSince(d.last_seen);
+    const [cls, label] = s < IDLE_S ? ['on', '활성'] : s < OFFLINE_S ? ['idle', '대기'] : ['off', '오프라인'];
+    return `
+      <div class="board">
+        <div class="board-head">
+          <span class="board-id">${d.device_id}</span>
+          <span class="badge ${cls}">${label}</span>
+        </div>
+        <dl class="kv">
+          <dt>IP</dt><dd>${d.ip || '-'}</dd>
+          <dt>신호</dt><dd>${d.rssi ? d.rssi + ' dBm' : '-'}</dd>
+          <dt>업로드</dt><dd>${d.uploads}회</dd>
+          <dt>마지막</dt><dd>${ago(d.last_seen)}</dd>
+          <dt>가동</dt><dd>${fmtUptime(d.uptime_s)}</dd>
+          <dt>PSRAM</dt><dd>${d.free_psram ? (d.free_psram / 1048576).toFixed(1) + ' MB' : '-'}</dd>
+          <dt>FOMO</dt><dd>${d.inference_ms ? d.inference_ms + ' ms' : '-'}</dd>
+          <dt>프레임</dt><dd>${fmtBytes(d.last_image_bytes)}</dd>
+        </dl>
+      </div>`;
+  }).join('');
+}
+
+function renderBars(el, obj, neutral) {
+  const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) { el.innerHTML = '<div class="empty" style="padding:14px 0">데이터 없음</div>'; return; }
+  const max = entries[0][1];
+  el.innerHTML = entries.map(([name, n]) => `
+    <div class="bar-row">
+      <span class="name" title="${name}">${name}</span>
+      <span class="track"><span class="fill ${neutral ? 'neutral' : ''}" style="width:${(n / max * 100).toFixed(1)}%"></span></span>
+      <span class="num">${n}</span>
+    </div>`).join('');
+}
+
+function renderStats(stats) {
+  $('k-violations').textContent = stats.total;
+  $('window-label').textContent = `최근 ${stats.window_hours}시간`;
+  $('k-violations-sub').textContent = `최근 ${stats.window_hours}시간`;
+
+  const top = Object.entries(stats.by_class).sort((a, b) => b[1] - a[1])[0];
+  $('k-top').textContent = top ? top[0] : '-';
+  $('k-top-sub').textContent = top ? `${top[1]}건` : ' ';
+
+  renderBars($('by-class'), stats.by_class, false);
+  renderBars($('by-device'), stats.by_device, true);
+
+  const hours = stats.by_hour;
+  if (hours.length) {
+    const max = Math.max(...hours.map(h => h.count));
+    $('spark').innerHTML = hours.map(h =>
+      `<div style="height:${(h.count / max * 100).toFixed(0)}%" title="${h.hour}시 · ${h.count}건"></div>`).join('');
+    $('spark-note').textContent = `${hours[0].hour.slice(5).replace('T', ' ')}시 ~ ${hours.at(-1).hour.slice(5).replace('T', ' ')}시 · 최대 ${max}건`;
+  } else {
+    $('spark').innerHTML = '';
+    $('spark-note').textContent = '데이터 없음';
+  }
+}
+
+// 사진 한 장에서 위반이 여러 건 나오면 행도 여러 개다. 같은 사진을 중복해서
+// 띄우지 않도록 이미지 기준으로 묶는다.
+function groupByImage(list) {
+  const map = new Map();
+  for (const r of list) {
+    if (!map.has(r.image_url)) {
+      map.set(r.image_url, { image_url: r.image_url, timestamp: r.timestamp, device_id: r.device_id, labels: [] });
+    }
+    map.get(r.image_url).labels.push({ label: r.class_label, conf: r.confidence });
+  }
+  return [...map.values()];
+}
+
+function renderGrid() {
+  const list = rows.filter(r =>
+    (!filterDevice || r.device_id === filterDevice) &&
+    (!filterClass || r.class_label === filterClass));
+  const groups = groupByImage(list);
+
+  $('empty').style.display = groups.length ? 'none' : 'block';
+  $('grid').innerHTML = groups.map((g, i) => `
+    <div class="card" data-i="${i}">
+      <div class="thumb">
+        <img src="${g.image_url}" alt="위반 사진" loading="lazy">
+        <span class="when">${ago(g.timestamp)}</span>
+      </div>
+      <div class="body">
+        <div class="tags">
+          ${g.labels.map(l => `<span class="tag ${l.conf < LOW_CONF ? 'low' : ''}">${l.label} ${l.conf.toFixed(2)}</span>`).join('')}
+        </div>
+        <div class="foot"><span>${g.device_id}</span><span>${new Date(g.timestamp).toLocaleTimeString('ko-KR')}</span></div>
+      </div>
+    </div>`).join('');
+
+  $('grid').querySelectorAll('.card').forEach(el => {
+    el.onclick = () => {
+      const g = groups[+el.dataset.i];
+      $('viewer-img').src = g.image_url;
+      $('viewer-tags').innerHTML = g.labels.map(l =>
+        `<span class="tag ${l.conf < LOW_CONF ? 'low' : ''}">${l.label} ${l.conf.toFixed(2)}</span>`).join('');
+      $('viewer-meta').textContent = `${g.device_id} · ${new Date(g.timestamp).toLocaleString('ko-KR')}`;
+      $('viewer').showModal();
+    };
+  });
+}
+
+function syncFilters(devices) {
+  const fill = (el, values, current) => {
+    const want = JSON.stringify(values);
+    if (el.dataset.values === want) return;
+    el.dataset.values = want;
+    const first = el.querySelector('option').outerHTML;
+    el.innerHTML = first + values.map(v => `<option value="${v}">${v}</option>`).join('');
+    el.value = current;
+  };
+  fill($('f-device'), devices.map(d => d.device_id), filterDevice);
+  fill($('f-class'), [...new Set(rows.map(r => r.class_label))].sort(), filterClass);
+}
+
+async function refresh() {
+  try {
+    const [v, s, d, h] = await Promise.all([
+      fetch('/violations?limit=200').then(r => r.json()),
+      fetch('/stats?hours=24').then(r => r.json()),
+      fetch('/devices').then(r => r.json()),
+      fetch('/healthz').then(r => r.json()),
+    ]);
+    rows = v;
+
+    const freshest = d.length ? Math.min(...d.map(x => secsSince(x.last_seen))) : Infinity;
+    $('pulse').className = 'pulse ' + (freshest < IDLE_S ? '' : freshest < OFFLINE_S ? 'stale' : 'down');
+    $('live-text').textContent = d.length
+      ? (freshest < IDLE_S ? '수신 중' : freshest < OFFLINE_S ? '대기' : '보드 무응답')
+      : '보드 없음';
+    $('k-queue').textContent = h.queue_depth ?? '-';
+
+    renderStats(s);
+    renderBoards(d);
+    syncFilters(d);
+    renderGrid();
+  } catch (e) {
+    $('pulse').className = 'pulse down';
+    $('live-text').textContent = '서버 연결 실패';
+  }
+}
+
+$('f-device').onchange = e => { filterDevice = e.target.value; renderGrid(); };
+$('f-class').onchange = e => { filterClass = e.target.value; renderGrid(); };
+$('f-reset').onclick = () => {
+  filterDevice = filterClass = '';
+  $('f-device').value = ''; $('f-class').value = '';
+  renderGrid();
+};
+
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+flask==3.0.3
+gunicorn==22.0.0
+gevent==24.2.1
+redis==5.0.4
+supabase==2.31.0
+python-dotenv==1.0.1
