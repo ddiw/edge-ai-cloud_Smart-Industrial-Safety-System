@@ -31,8 +31,8 @@
 #define CAMERA_MODEL_XIAO_ESP32S3
 
 /* ── User settings ──────────────────────────────────────────────────────── */
-const char* WIFI_SSID = "KT_GIGA_AA0B";
-const char* WIFI_PASSWORD = "8bbfdhf160";
+const char* WIFI_SSID = "";
+const char* WIFI_PASSWORD = "";
 
 const char* SERVER_IP = "172.30.1.16"; // Raspberry Pi 5 LAN IPv4
 const uint16_t SERVER_PORT = 8080;      // receiver container
