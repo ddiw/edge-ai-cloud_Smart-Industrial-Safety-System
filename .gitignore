@@ -1,0 +1,26 @@
+# ESP-IDF
+esp32/build/
+esp32/managed_components/
+esp32/dependencies.lock
+esp32/sdkconfig
+esp32/sdkconfig.old
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ONNX / model weights (add exceptions as needed)
+raspberry-pi/inference/models/*.onnx
+
+# Docker
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+*.swp
+
+# Env
+.env

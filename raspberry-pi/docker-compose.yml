@@ -1,0 +1,12 @@
+# Docker Compose 스켈레톤 — 실제 서비스 정의는 추후 작성
+#
+# services:
+#   receiver:
+#     build: ./receiver
+#     ports:
+#       - "8000:8000"
+#
+#   inference:
+#     build: ./inference
+#     volumes:
+#       - ./inference/models:/models
