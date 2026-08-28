@@ -1,12 +1,24 @@
 # Docker Compose 스켈레톤 — 실제 서비스 정의는 추후 작성
 #
 # services:
-#   receiver:
+#   receiver:            # ESP32 HTTP POST 수신, Redis 큐에 push, 즉시 응답
 #     build: ./receiver
 #     ports:
 #       - "8000:8000"
+#     depends_on:
+#       - redis
 #
-#   inference:
+#   inference:           # Redis 큐 polling, best.onnx 추론, Supabase 업로드
 #     build: ./inference
 #     volumes:
 #       - ./inference/models:/models
+#     depends_on:
+#       - redis
+#
+#   web:                 # 실시간 스트리밍 + 위반 이력/갤러리 대시보드
+#     build: ../web
+#     ports:
+#       - "8080:8080"
+#
+#   redis:                # receiver -> inference 간 비동기 큐
+#     image: redis:alpine

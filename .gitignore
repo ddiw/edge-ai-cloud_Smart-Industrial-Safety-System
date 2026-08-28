@@ -24,3 +24,6 @@ raspberry-pi/inference/models/*.onnx
 
 # Env
 .env
+
+# Claude Code local settings
+.claude/settings.local.json
